@@ -21,8 +21,4 @@ if [ "$DOWNLOAD" = true ]; then
     echo "Downloading data files..."
     wget https://www.ssa.gov/oact/babynames/names.zip
     wget https://www.ssa.gov/oact/babynames/state/namesbystate.zip
-
-    echo "Unzipping data files..."
-    unzip names.zip -d data/
-    unzip namesbystate.zip -d states_data/
 fi
