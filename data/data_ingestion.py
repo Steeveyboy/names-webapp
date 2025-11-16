@@ -65,7 +65,7 @@ class NamesDataPipeline:
         files_processed = 0
         with zipfile.ZipFile(self.names_by_state_zip_path, 'r') as zip_ref:
             # Get list of CSV files in the zip
-            csv_files = [f for f in zip_ref.namelist() if f.endswith('.TXT') or f.endswith('.csv')]
+            csv_files = [f for f in zip_ref.namelist() if f.lower().endswith('.txt') or f.lower().endswith('.csv')]
             logger.info(f"Found {len(csv_files)} data files in zip archive.")
             
             for filename in csv_files:
