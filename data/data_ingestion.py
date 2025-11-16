@@ -131,7 +131,7 @@ class NamesDataPipeline:
                     
                     # Batch insert for performance
                     self.cursor.executemany(
-                        "INSERT INTO ssa_names_states (name, gender, count, year) VALUES (?, ?, ?, ?)",
+                        "INSERT INTO ssa_names (name, gender, count, year) VALUES (?, ?, ?, ?)",
                         records
                     )
                     self.conn.commit()
