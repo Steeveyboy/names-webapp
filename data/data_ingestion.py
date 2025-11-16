@@ -214,5 +214,5 @@ class NamesDataPipeline:
 
 if __name__ == "__main__":
     # Run the pipeline
-    pipeline = NamesDataPipeline(db_path='../simple_database.db')
+    pipeline = NamesDataPipeline(db_path='../names_database.db')
     pipeline.run()
