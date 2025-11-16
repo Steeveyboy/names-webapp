@@ -42,8 +42,13 @@ class NamesDataPipeline:
         logger.info("Initializing database schema...")
         
         # Execute SQL schema file
-        with open('initdb.sql', 'r') as sql_file:
-            sql_script = sql_file.read()
+        try:
+            with open('initdb.sql', 'r') as sql_file:
+                sql_script = sql_file.read()
+        except (FileNotFoundError, IOError) as e:
+            logger.error(f"Could not open 'initdb.sql' for reading. Expected at: {Path('initdb.sql').resolve()}")
+            logger.error(f"Error details: {e}")
+            raise
         
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
