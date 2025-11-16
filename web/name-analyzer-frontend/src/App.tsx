@@ -7,48 +7,94 @@ interface NameData {
   year: number;
   male: number;
   female: number;
+  state: string;
+  name: string;
 }
 
-// Mock data for demonstration
-const getMockData = (name: string): NameData[] => {
-  const data: NameData[] = [];
-  for (let year = 1980; year <= 2023; year++) {
-    data.push({
-      year,
-      male: Math.floor(Math.random() * 1000) + 100,
-      female: Math.floor(Math.random() * 1000) + 100,
-    });
+
+// const mockData: NameData[] = [
+//   { name: "Veronica", year: 1985, male: 200, female: 180, state: "California" },
+//   { name: "Veronica", year: 1986, male: 150, female: 170, state: "New York" },
+//   { name: "Veronica", year: 1987, male: 100, female: 50, state: "California" },
+//   { name: "James", year: 1985, male: 300, female: 50, state: "Texas" },
+//   { name: "James", year: 1986, male: 250, female: 60, state: "Florida" },
+// ];
+
+// returns arrays of NameData objects for a given name
+const getNameData = async (name: string): Promise<NameData[]> => {
+  try {
+    const response = await fetch(`http://localhost:8000/searchName/${name}`);
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
+    const data: NameData[] = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching name data:", error);
+    return [];
   }
-  return data;
 };
+
+// const getNameData = async (name: string): Promise<NameData[]> => {
+//   console.log(`Fetching data for ${name} (mock)`);
+//   // Simulate network delay
+//   return new Promise(resolve => {
+//     setTimeout(() => {
+//       resolve(mockData.filter(d => d.name.toLowerCase() === name.toLowerCase()));
+//     }, 200);
+//   });
+// };
+
 
 export default function App() {
   const [searchedName, setSearchedName] = useState('');
   const [nameData, setNameData] = useState<NameData[]>([]);
 
-  const handleSearch = (
-    name: string,
-    filters: {
-      state: string;
-      gender: string;
-      yearFrom: string;
-      yearTo: string;
-    }
-  ) => {
-    setSearchedName(name);
-    const mockData = getMockData(name);
-    
-    // Filter data based on year range
-    let filteredData = mockData;
+const handleSearch = async (
+  name: string,
+  filters: {
+    state: string;      
+    gender: string;     
+    yearFrom: string;
+    yearTo: string;
+  }
+) => {
+  setSearchedName(name);
+
+  try {
+    let nameData = await getNameData(name);
+    // Given NameData[], filter results if given from on submit in namesearch.tsx
+
+    // Filter by year range
     if (filters.yearFrom) {
-      filteredData = filteredData.filter(d => d.year >= parseInt(filters.yearFrom));
+      nameData = nameData.filter(d => d.year >= parseInt(filters.yearFrom));
     }
     if (filters.yearTo) {
-      filteredData = filteredData.filter(d => d.year <= parseInt(filters.yearTo));
+      nameData = nameData.filter(d => d.year <= parseInt(filters.yearTo));
     }
-    
-    setNameData(filteredData);
-  };
+
+    // Filter by state
+    if (filters.state && filters.state !== "All") {
+      nameData = nameData.filter(d => d.state === filters.state);
+    }
+
+    // Filter by gender
+    if (filters.gender && filters.gender !== "All") {
+      // d is each NameData object returned from api call
+      nameData = nameData.map(d => {
+        // if the gender is filtered to only male, set female count to 0 so the chart ignores it [ vice versa]
+        if (filters.gender === "Male") return { ...d, female: 0 };
+        if (filters.gender === "Female") return { ...d, male: 0 };
+        return d;
+      });
+    }
+
+    setNameData(nameData);
+  } catch (error) {
+    console.error("Error fetching or filtering name data:", error);
+    setNameData([]);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
