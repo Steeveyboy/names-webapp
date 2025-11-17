@@ -29,13 +29,15 @@ const US_STATES = [
   'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV',
   'WI', 'WY'
 ];
+const currentYear = new Date().getFullYear();
+const maxYear = currentYear - 1;
 
 export function NameSearch({ onSearch }: NameSearchProps) {
   const [name, setName] = useState('');
   const [state, setState] = useState('All States');
   const [gender, setGender] = useState('All');
   const [yearFrom, setYearFrom] = useState('1980');
-  const [yearTo, setYearTo] = useState('2023');
+  const [yearTo, setYearTo] = useState(String(maxYear));
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -124,7 +126,7 @@ export function NameSearch({ onSearch }: NameSearchProps) {
                   id="year-from"
                   type="number"
                   min="1880"
-                  max="2023"
+                  max={maxYear}
                   value={yearFrom}
                   onChange={(e) => setYearFrom(e.target.value)}
                   className="mt-2"
@@ -138,7 +140,7 @@ export function NameSearch({ onSearch }: NameSearchProps) {
                   id="year-to"
                   type="number"
                   min="1880"
-                  max="2023"
+                  max={maxYear}
                   value={yearTo}
                   onChange={(e) => setYearTo(e.target.value)}
                   className="mt-2"
