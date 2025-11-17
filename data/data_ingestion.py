@@ -9,6 +9,7 @@ import csv
 from pathlib import Path
 import logging
 import argparse
+import re
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -152,7 +153,6 @@ class NamesDataPipeline:
         Returns:
             Year as integer or None if not found
         """
-        import re
         match = re.search(r'(\d{4})', filename)
         return int(match.group(1)) if match else None
 
