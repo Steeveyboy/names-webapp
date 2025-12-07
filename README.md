@@ -52,12 +52,24 @@ source .venv/bin/activate
 # Install production dependencies
 pip install -r requirements.txt
 
-# For development (includes Jupyter, pandas, seaborn)
+# For development (includes Jupyter, seaborn)
 pip install -r requirements-dev.txt
 ```
 
-### 3. Verify Database
+### 3.0 Populate Database
+```bash
+cd data/
 
+# Download and ingest data into sqlite3 db
+python data_ingestion -d
+
+# Move names_database from project root to rest/
+cd ..
+mv names_database.db rest/
+```
+
+
+### 3.1 Verify database
 ```bash
 # Check if database exists and has data
 python3 -c "
