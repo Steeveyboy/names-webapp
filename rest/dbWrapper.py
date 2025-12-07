@@ -11,7 +11,12 @@ class dbManager():
 
 
     def get_name(self, name):
-        query = f"""select * from ssa_names where name like {name};"""
+        query = f"""select * from ssa_names where name like \"{name}\";"""
         # self.cur.execute()
-        pd.read_sql(query, con=self.conn)
+        return pd.read_sql(query, con=self.conn)
+
     
+if __name__ == "__main__":
+    db = dbManager()
+    res = db.get_name("veronica")
+    print(res)

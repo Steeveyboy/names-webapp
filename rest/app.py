@@ -14,5 +14,5 @@ def getName(name):
     results = dbm.get_name(name)
     print(name)
     # print(request.form['searchText'])
-    return results
+    return results.to_json()
 
