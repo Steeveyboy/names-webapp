@@ -13,7 +13,7 @@ class dbManager():
     def get_name(self, name):
         query = f"""select * from ssa_names where name like \"{name}\";"""
         # self.cur.execute()
-        return pd.read_sql(query, con=self.conn)
+        return pd.read_sql(query, con=self.conn).to_json(orient="records")
 
     
 if __name__ == "__main__":
