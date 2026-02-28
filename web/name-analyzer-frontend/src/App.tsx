@@ -3,98 +3,93 @@ import { NameSearch } from './components/NameSearch';
 import { NameChart } from './components/NameChart';
 import { BarChart3 } from 'lucide-react';
 
-interface NameData {
-  year: number;
-  male: number;
-  female: number;
-  state: string;
+/** Shape of a single row returned by GET /api/names/{name} */
+interface NameRecord {
   name: string;
+  gender: 'M' | 'F';
+  count: number;
+  year: number;
 }
 
+/** Pivoted per-year data used by the chart */
+export interface NameData {
+  year: number;
+  male: number | null;
+  female: number | null;
+}
 
-// const mockData: NameData[] = [
-//   { name: "Veronica", year: 1985, male: 200, female: 180, state: "California" },
-//   { name: "Veronica", year: 1986, male: 150, female: 170, state: "New York" },
-//   { name: "Veronica", year: 1987, male: 100, female: 50, state: "California" },
-//   { name: "James", year: 1985, male: 300, female: 50, state: "Texas" },
-//   { name: "James", year: 1986, male: 250, female: 60, state: "Florida" },
-// ];
-
-// returns arrays of NameData objects for a given name
+/** Fetch raw records from the versioned endpoint and pivot by year. */
 const getNameData = async (name: string): Promise<NameData[]> => {
-  try {
-    const response = await fetch(`http://localhost:8000/searchName/${name}`);
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
-    }
-    const data: NameData[] = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Error fetching name data:", error);
-    return [];
+  const response = await fetch(`http://localhost:8000/api/names/${encodeURIComponent(name)}`);
+  if (!response.ok) throw new Error(`API error: ${response.status}`);
+
+  const records: NameRecord[] = await response.json();
+
+  // Aggregate counts by year, splitting M vs F
+  const byYear = new Map<number, { male: number; female: number }>();
+  for (const r of records) {
+    const entry = byYear.get(r.year) ?? { male: 0, female: 0 };
+    if (r.gender === 'M') entry.male += r.count;
+    else entry.female += r.count;
+    byYear.set(r.year, entry);
   }
+
+  return Array.from(byYear.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([year, { male, female }]) => ({
+      year,
+      male: male || null,
+      female: female || null,
+    }));
 };
-
-// const getNameData = async (name: string): Promise<NameData[]> => {
-//   console.log(`Fetching data for ${name} (mock)`);
-//   // Simulate network delay
-//   return new Promise(resolve => {
-//     setTimeout(() => {
-//       resolve(mockData.filter(d => d.name.toLowerCase() === name.toLowerCase()));
-//     }, 200);
-//   });
-// };
-
 
 export default function App() {
   const [searchedName, setSearchedName] = useState('');
   const [nameData, setNameData] = useState<NameData[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-const handleSearch = async (
-  name: string,
-  filters: {
-    state: string;      
-    gender: string;     
-    yearFrom: string;
-    yearTo: string;
-  }
-) => {
-  setSearchedName(name);
-
-  try {
-    let nameData = await getNameData(name);
-    // Given NameData[], filter results if given from on submit in namesearch.tsx
-
-    // Filter by year range
-    if (filters.yearFrom) {
-      nameData = nameData.filter(d => d.year >= parseInt(filters.yearFrom));
+  const handleSearch = async (
+    name: string,
+    filters: {
+      state: string;
+      gender: string;
+      yearFrom: string;
+      yearTo: string;
     }
-    if (filters.yearTo) {
-      nameData = nameData.filter(d => d.year <= parseInt(filters.yearTo));
-    }
+  ) => {
+    setSearchedName(name);
+    setError(null);
+    setIsLoading(true);
 
-    // Filter by state
-    if (filters.state && filters.state !== "All") {
-      nameData = nameData.filter(d => d.state === filters.state);
-    }
+    try {
+      let data = await getNameData(name);
 
-    // Filter by gender
-    if (filters.gender && filters.gender !== "All") {
-      // d is each NameData object returned from api call
-      nameData = nameData.map(d => {
-        // if the gender is filtered to only male, set female count to 0 so the chart ignores it [ vice versa]
-        if (filters.gender === "Male") return { ...d, female: 0 };
-        if (filters.gender === "Female") return { ...d, male: 0 };
-        return d;
-      });
-    }
+      // Filter by year range
+      if (filters.yearFrom) {
+        data = data.filter(d => d.year >= parseInt(filters.yearFrom));
+      }
+      if (filters.yearTo) {
+        data = data.filter(d => d.year <= parseInt(filters.yearTo));
+      }
 
-    setNameData(nameData);
-  } catch (error) {
-    console.error("Error fetching or filtering name data:", error);
-    setNameData([]);
-  }
-};
+      // Hide the irrelevant gender series rather than removing points,
+      // so the chart axis scale stays consistent.
+      if (filters.gender === 'Male') {
+        data = data.map(d => ({ ...d, female: null }));
+      } else if (filters.gender === 'Female') {
+        data = data.map(d => ({ ...d, male: null }));
+      }
+
+      setNameData(data);
+    } catch (err) {
+      console.error('Error fetching name data:', err);
+      setError('Failed to load data. Is the API server running?');
+      setNameData([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
@@ -144,7 +139,26 @@ const handleSearch = async (
         <NameSearch onSearch={handleSearch} />
 
         {/* Chart Component */}
-        {searchedName && nameData.length > 0 && (
+        {isLoading && (
+          <div className="flex justify-center items-center py-16 text-indigo-600">
+            <svg className="animate-spin w-8 h-8 mr-3" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+            </svg>
+            Loading…
+          </div>
+        )}
+        {!isLoading && error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 text-center">
+            {error}
+          </div>
+        )}
+        {!isLoading && !error && searchedName && nameData.length === 0 && (
+          <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 rounded-lg p-4 text-center">
+            No data found for <strong>{searchedName}</strong>.
+          </div>
+        )}
+        {!isLoading && !error && searchedName && nameData.length > 0 && (
           <NameChart name={searchedName} data={nameData} />
         )}
       </div>
