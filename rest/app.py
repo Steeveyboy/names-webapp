@@ -1,138 +1,165 @@
 """
-Flask REST API for the SSA baby-names analytics application.
+FastAPI REST API for the SSA baby-names analytics application.
 
 The database backend (SQLite or Postgres/Neon) is selected at startup via
 the DB_BACKEND environment variable — see config.py.
+
+Swagger UI:  /docs
+ReDoc:       /redoc
 """
 
-from flask import Flask, jsonify, request
-from db.factory import create_backend
+from contextlib import asynccontextmanager
+from typing import Optional
 
-app = Flask(__name__)
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+
+from db.factory import create_backend
+from models import (
+    DecadeTrend,
+    GenderBreakdown,
+    NameByStateRecord,
+    NameRecord,
+    NameSearchResult,
+    NameStats,
+    RankedName,
+    StateCount,
+    YearCount,
+)
+
+
+# ── App setup ─────────────────────────────────────────────────────────────
+
 db = create_backend()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    db.close()
+
+
+app = FastAPI(
+    title="Nomi — Baby Names API",
+    description="Analytics API for SSA baby-names data (1880–2021).",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET"],
+    allow_headers=["*"],
+)
 
 
 # ── Health ────────────────────────────────────────────────────────────────
 
-@app.route("/health", methods=["GET"])
+@app.get("/health", tags=["Health"])
 def health():
-    return jsonify({"status": "ok"})
+    return {"status": "ok"}
 
 
 # ── Name lookup & trends ─────────────────────────────────────────────────
 
-@app.route("/api/names/<name>", methods=["GET"])
+@app.get("/api/names/{name}", response_model=list[NameRecord], tags=["Names"])
 def get_name_records(name: str):
-    """Raw records for a name."""
-    records = db.get_name_records(name)
-    return jsonify([r.model_dump() for r in records])
+    """Raw records for a name (one row per gender per year)."""
+    return db.get_name_records(name)
 
 
-@app.route("/api/names/<name>/trends", methods=["GET"])
-def get_name_trends(name: str):
-    """Yearly trend data, optional ?gender=M|F."""
-    gender = request.args.get("gender")
-    trends = db.get_name_trends(name, gender=gender)
-    return jsonify([t.model_dump() for t in trends])
+@app.get("/api/names/{name}/trends", response_model=list[YearCount], tags=["Names"])
+def get_name_trends(name: str, gender: Optional[str] = Query(None, description="Filter by gender: M or F")):
+    """Yearly total counts for a name, optionally filtered by gender."""
+    return db.get_name_trends(name, gender=gender)
 
 
-@app.route("/api/names/<name>/stats", methods=["GET"])
+@app.get("/api/names/{name}/stats", response_model=NameStats, tags=["Names"])
 def get_name_stats(name: str):
-    """Aggregate statistics for a name."""
+    """Aggregate statistics for a name: totals, peak year, gender breakdown."""
     stats = db.get_name_stats(name)
     if stats is None:
-        return jsonify({"error": "Name not found"}), 404
-    return jsonify(stats.model_dump())
+        raise HTTPException(status_code=404, detail="Name not found")
+    return stats
 
 
-@app.route("/api/names/<name>/gender", methods=["GET"])
+@app.get("/api/names/{name}/gender", response_model=list[GenderBreakdown], tags=["Names"])
 def get_gender_breakdown(name: str):
-    """Gender breakdown for a name."""
-    breakdown = db.get_gender_breakdown(name)
-    return jsonify([b.model_dump() for b in breakdown])
+    """Total count for a name split by gender."""
+    return db.get_gender_breakdown(name)
 
 
-@app.route("/api/names/<name>/decades", methods=["GET"])
-def get_decade_trends(name: str):
-    """Decade-aggregated trend data, optional ?gender=M|F."""
-    gender = request.args.get("gender")
-    decades = db.get_decade_trends(name, gender=gender)
-    return jsonify([d.model_dump() for d in decades])
+@app.get("/api/names/{name}/decades", response_model=list[DecadeTrend], tags=["Names"])
+def get_decade_trends(name: str, gender: Optional[str] = Query(None, description="Filter by gender: M or F")):
+    """Decade-aggregated counts for a name, optionally filtered by gender."""
+    return db.get_decade_trends(name, gender=gender)
 
 
 # ── Rankings ──────────────────────────────────────────────────────────────
 
-@app.route("/api/rankings/<int:year>", methods=["GET"])
-def get_top_names(year: int):
-    """Top names for a year, optional ?gender=M|F&limit=10."""
-    gender = request.args.get("gender")
-    limit = request.args.get("limit", 10, type=int)
-    top = db.get_top_names(year, gender=gender, limit=limit)
-    return jsonify([t.model_dump() for t in top])
+@app.get("/api/rankings/{year}", response_model=list[RankedName], tags=["Rankings"])
+def get_top_names(
+    year: int,
+    gender: Optional[str] = Query(None, description="Filter by gender: M or F"),
+    limit: int = Query(10, ge=1, le=1000),
+):
+    """Top names for a given year, optionally filtered by gender."""
+    return db.get_top_names(year, gender=gender, limit=limit)
 
 
-@app.route("/api/rankings/<int:year>/<name>", methods=["GET"])
-def get_name_rank(year: int, name: str):
-    """Rank of a name in a given year. Requires ?gender=M|F."""
-    gender = request.args.get("gender")
-    if not gender:
-        return jsonify({"error": "gender query parameter is required"}), 400
+@app.get("/api/rankings/{year}/{name}", tags=["Rankings"])
+def get_name_rank(
+    year: int,
+    name: str,
+    gender: str = Query(..., description="Required: M or F"),
+):
+    """Rank of a name in a given year for a specific gender."""
     rank = db.get_name_rank(name, year, gender)
     if rank is None:
-        return jsonify({"error": "Name not ranked in that year"}), 404
-    return jsonify({"name": name, "year": year, "gender": gender, "rank": rank})
+        raise HTTPException(status_code=404, detail="Name not ranked in that year")
+    return {"name": name, "year": year, "gender": gender, "rank": rank}
 
 
 # ── State-level data ─────────────────────────────────────────────────────
 
-@app.route("/api/names/<name>/states", methods=["GET"])
-def get_name_by_state(name: str):
-    """State-level records, optional ?state=CA."""
-    state = request.args.get("state")
-    records = db.get_name_by_state(name, state=state)
-    return jsonify([r.model_dump() for r in records])
+@app.get("/api/names/{name}/states", response_model=list[NameByStateRecord], tags=["States"])
+def get_name_by_state(name: str, state: Optional[str] = Query(None, description="Two-letter state code, e.g. CA")):
+    """State-level records for a name, optionally filtered to a single state."""
+    return db.get_name_by_state(name, state=state)
 
 
-@app.route("/api/names/<name>/state-distribution", methods=["GET"])
+@app.get("/api/names/{name}/state-distribution", response_model=list[StateCount], tags=["States"])
 def get_state_distribution(name: str):
-    """Aggregate count per state for a name (good for choropleth maps)."""
-    dist = db.get_state_distribution(name)
-    return jsonify([d.model_dump() for d in dist])
+    """Total count per state for a name, ordered descending (useful for choropleth maps)."""
+    return db.get_state_distribution(name)
 
 
-# ── Search / autocomplete ────────────────────────────────────────────────
+# ── Search / autocomplete ─────────────────────────────────────────────────
 
-@app.route("/api/search", methods=["GET"])
-def search_names():
-    """Prefix search, required ?q=<prefix>&limit=20."""
-    prefix = request.args.get("q", "")
-    if len(prefix) < 1:
-        return jsonify({"error": "query parameter 'q' is required"}), 400
-    limit = request.args.get("limit", 20, type=int)
-    results = db.search_names(prefix, limit=limit)
-    return jsonify([r.model_dump() for r in results])
+@app.get("/api/search", response_model=list[NameSearchResult], tags=["Search"])
+def search_names(
+    q: str = Query(..., min_length=1, description="Name prefix to search"),
+    limit: int = Query(20, ge=1, le=100),
+):
+    """Prefix search for names, ordered by total popularity. Used for autocomplete."""
+    return db.search_names(q, limit=limit)
 
 
 # ── Diversity metrics ─────────────────────────────────────────────────────
 
-@app.route("/api/diversity", methods=["GET"])
-def get_unique_name_count():
-    """Number of distinct names, optional ?year=2020."""
-    year = request.args.get("year", type=int)
+@app.get("/api/diversity", tags=["Diversity"])
+def get_unique_name_count(year: Optional[int] = Query(None, description="Restrict count to a specific year")):
+    """Number of distinct names in the dataset, optionally filtered by year."""
     count = db.get_unique_name_count(year)
-    return jsonify({"unique_names": count, "year": year})
+    return {"unique_names": count, "year": year}
 
 
-# ── Legacy endpoint (backwards compatibility) ────────────────────────────
+# ── Legacy endpoint (backwards compatibility) ─────────────────────────────
 
-@app.route("/searchName/<name>", methods=["GET"])
+@app.get("/searchName/{name}", response_model=list[NameRecord], tags=["Legacy"], deprecated=True)
 def search_name_legacy(name: str):
-    records = db.get_name_records(name)
-    return jsonify([r.model_dump() for r in records])
+    """Deprecated. Use /api/names/{name} instead."""
+    return db.get_name_records(name)
 
-
-# ── Entry point ───────────────────────────────────────────────────────────
-
-if __name__ == "__main__":
-    app.run(debug=True)
 

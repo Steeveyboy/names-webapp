@@ -19,5 +19,4 @@ DB_BACKEND: str = os.environ.get("DB_BACKEND", "sqlite").lower()
 # SQLite-specific
 SQLITE_DB_PATH: str = os.environ.get("SQLITE_DB_PATH", "names_database.db")
 
-# Flask
-FLASK_DEBUG: bool = os.environ.get("FLASK_DEBUG", "0") == "1"
+
