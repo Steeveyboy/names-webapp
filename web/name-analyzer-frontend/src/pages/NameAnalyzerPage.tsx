@@ -7,12 +7,14 @@ import type { TrendDataPoint } from '../lib/api';
 export default function NameAnalyzerPage() {
   const [searchedName, setSearchedName] = useState('');
   const [nameData, setNameData] = useState<TrendDataPoint[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSearch = async (
     name: string,
     filters: { state: string; gender: string; yearFrom: string; yearTo: string }
   ) => {
     setSearchedName(name);
+    setError(null);
 
     try {
       let data = await fetchNameTrends(name);
@@ -33,8 +35,9 @@ export default function NameAnalyzerPage() {
       }
 
       setNameData(data);
-    } catch (error) {
-      console.error('Error fetching name data:', error);
+    } catch (err) {
+      console.error('Error fetching name data:', err);
+      setError('Unable to load name data. Please check your connection and try again.');
       setNameData([]);
     }
   };
@@ -42,6 +45,11 @@ export default function NameAnalyzerPage() {
   return (
     <>
       <NameSearch onSearch={handleSearch} />
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4 mb-4 text-sm">
+          {error}
+        </div>
+      )}
       {searchedName && nameData.length > 0 && (
         <NameChart name={searchedName} data={nameData} />
       )}

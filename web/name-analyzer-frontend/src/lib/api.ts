@@ -50,6 +50,8 @@ export async function fetchNameTrends(name: string): Promise<TrendDataPoint[]> {
     fetch(`${API_BASE}/api/names/${encodedName}/trends?gender=F`),
   ]);
 
+  // Only bail out if BOTH requests failed. If one gender has no data (e.g. 404),
+  // we still display the other gender's trend with the missing one as zeros.
   if (!maleRes.ok && !femaleRes.ok) return [];
 
   const maleData: YearCount[] = maleRes.ok ? await maleRes.json() : [];
