@@ -21,10 +21,10 @@ export default function NameAnalyzerPage() {
 
       // Filter by year range
       if (filters.yearFrom) {
-        data = data.filter(d => d.year >= parseInt(filters.yearFrom));
+        data = data.filter(d => d.year >= parseInt(filters.yearFrom, 10));
       }
       if (filters.yearTo) {
-        data = data.filter(d => d.year <= parseInt(filters.yearTo));
+        data = data.filter(d => d.year <= parseInt(filters.yearTo, 10));
       }
 
       // Filter by gender — zero out the other line
