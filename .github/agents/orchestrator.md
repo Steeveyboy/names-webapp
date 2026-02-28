@@ -6,7 +6,7 @@ You are the **orchestrator** for the names-webapp project. Your role is to coord
 
 | Agent | File | Scope |
 |-------|------|-------|
-| Backend | `backend.md` | `rest/` — Flask API, SQLite/Postgres, data models |
+| Backend | `backend-rest-dev.agent.md` | `rest/` — FastAPI, uvicorn, SQLite/Postgres, Pydantic models |
 | Frontend | `frontend.md` | `web/name-analyzer-frontend/` — React/TypeScript/Vite/Tailwind |
 
 ## Recommended Orchestration Pattern
@@ -41,7 +41,7 @@ User request
 Assign a task to a specific agent by mentioning it in your Copilot issue or chat prompt, for example:
 
 ```
-@copilot using the backend agent, add a /api/names/{name}/compare endpoint
+@copilot using the backend-rest-dev agent, add a /api/names/{name}/compare endpoint
 that accepts two names and returns their year-by-year counts side by side.
 ```
 
@@ -56,8 +56,19 @@ When you want full-stack work in one request, mention the orchestrator:
 @copilot using the orchestrator agent, add a "Compare Names" feature.
 ```
 
-The orchestrator will plan the sub-tasks, delegate to the backend agent first,
+The orchestrator will plan the sub-tasks, delegate to the backend-rest-dev agent first,
 then to the frontend agent with the updated API contract.
+
+## Backend Runtime
+
+The FastAPI backend runs with **uvicorn** (default: `http://localhost:8000`):
+
+```bash
+cd rest
+uvicorn app:app --reload
+```
+
+Interactive API docs are always available at `http://localhost:8000/docs`.
 
 ## Responsibilities
 
@@ -84,7 +95,7 @@ then to the frontend agent with the updated API contract.
 **Orchestrator plan:**
 
 1. [ ] **Backend** — confirm `GET /api/rankings/{year}?limit=10` exists and returns `[{name, count, gender}]`.  
-   _(Already implemented in `rest/app.py` — no backend change needed.)_
+   _(Already implemented in `rest/app.py` — no backend change needed. Verify at `http://localhost:8000/docs`.)_
 
 2. [ ] **Frontend** — add a `YearRankings` component that:
    - renders a year-picker (1898–2021)

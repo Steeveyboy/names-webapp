@@ -36,13 +36,20 @@ web/name-analyzer-frontend/
 └── package.json
 ```
 
+## Related Agents
+
+- **Backend agent**: `backend-rest-dev.agent.md` — owns `rest/`. When a new endpoint is needed, delegate to the backend agent first, then consume it here.
+
 ## API Contract
 
-All data comes from the Flask backend (default: `http://localhost:5000`).  
-The key endpoint used by the frontend is:
+All data comes from the FastAPI backend (default: `http://localhost:8000`).  
+CORS is handled server-side — no proxy configuration is needed.  
+Interactive API docs are available at `http://localhost:8000/docs` (Swagger UI).
+
+The legacy endpoint used by the frontend is:
 
 ```
-GET /searchName/{name}
+GET /searchName/{name}         (deprecated — prefer /api/names/{name})
 ```
 
 Response shape (`NameData[]`):
