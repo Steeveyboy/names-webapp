@@ -1,15 +1,10 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
-
-interface NameData {
-  year: number;
-  male: number;
-  female: number;
-}
+import type { TrendDataPoint } from '../lib/api';
 
 interface NameChartProps {
   name: string;
-  data: NameData[];
+  data: TrendDataPoint[];
 }
 
 export function NameChart({ name, data }: NameChartProps) {
