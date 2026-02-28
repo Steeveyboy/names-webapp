@@ -44,7 +44,11 @@ class DatabaseBackend(ABC):
 
     @abstractmethod
     def get_name_records(self, name: str) -> list[NameRecord]:
-        """Return every national row for *name* (case-insensitive)."""
+        """Return every national row for *name*.
+
+        The name is normalised to Title Case before querying so that
+        indexes on the ``name`` column can be used directly.
+        """
 
     @abstractmethod
     def get_name_trends(self, name: str, gender: Optional[str] = None) -> list[YearCount]:
