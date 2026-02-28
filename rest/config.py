@@ -2,11 +2,20 @@
 Application configuration.
 
 Uses environment variables with sensible defaults for local development.
+Loads a ``.env`` file (if present) from the project root for convenience.
 """
 
 from __future__ import annotations
 
 import os
+
+# Load .env before reading any config values
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
+except ImportError:
+    pass
 
 
 # ---------------------------------------------------------------------------
