@@ -1,5 +1,5 @@
 ---
-description: "Use this agent when the user asks to implement backend features, create REST services, handle data ingestion, or maintain backend code quality.\n\nTrigger phrases: 'implement a new backend feature', 'create a REST endpoint for', 'set up data ingestion', 'build a backend API', 'fix this backend bug', 'improve backend code', 'refactor this service', 'add this feature to the backend'.\n\nExamples:\n- 'The frontend team needs a new API endpoint to fetch user data' → design and implement the REST endpoint\n- 'Set up data ingestion for our CSV files' → create the data ingestion pipeline\n- 'This backend function is too complex and hard to follow' → refactor for clarity\n- 'There's a bug when processing large datasets' → diagnose and fix the issue"
+description: "Use when implementing backend features, REST endpoints, data ingestion, or fixing bugs. Trigger: 'implement backend feature', 'create REST endpoint', 'set up data ingestion', 'fix backend bug'. Examples: New API for user data → design and implement; Data ingestion → create pipeline; Code too complex → refactor for clarity; Bug in dataset processing → diagnose and fix."
 name: backend-rest-dev
 tools: ['shell', 'read', 'search', 'edit', 'task', 'skill', 'web_search', 'web_fetch', 'ask_user']
 ---

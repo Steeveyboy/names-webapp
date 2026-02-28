@@ -1,5 +1,5 @@
 ---
-description: "Use this agent when the user asks to build, improve, or refactor frontend UI components and data visualizations for the Nomi application.\n\nTrigger phrases: 'build a visualization for', 'create a dashboard', 'improve the UI', 'implement a chart', 'update the frontend component', 'add a new visualization', 'optimize the data display'.\n\nExamples:\n- 'Create an interactive chart showing name trends over time' → build a Recharts component with proper TypeScript types\n- 'The backend has a new endpoint at /api/analytics - update the frontend to use it' → check backend routes and implement the visualization\n- 'Our dashboard is slow when showing large datasets' → refactor for performance\n- 'We need a new UI component following our design system' → implement using Radix UI and Tailwind"
+description: "Use for building frontend UI, components, and data visualizations. Trigger: 'build visualization', 'create dashboard', 'improve UI', 'implement chart'. Examples: Interactive chart showing trends → build with Recharts and TypeScript; New backend endpoint → integrate visualization; Slow dashboard → optimize performance; New component → implement with Radix UI and Tailwind."
 name: frontend-viz-engineer
 ---
 
