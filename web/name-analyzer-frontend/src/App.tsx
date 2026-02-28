@@ -20,10 +20,12 @@ interface NameData {
 //   { name: "James", year: 1986, male: 250, female: 60, state: "Florida" },
 // ];
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+
 // returns arrays of NameData objects for a given name
 const getNameData = async (name: string): Promise<NameData[]> => {
   try {
-    const response = await fetch(`http://localhost:8000/searchName/${name}`);
+    const response = await fetch(`${API_BASE_URL}/searchName/${name}`);
     if (!response.ok) {
       throw new Error("Network response was not ok");
     }
