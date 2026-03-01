@@ -20,7 +20,8 @@ export interface NameData {
 
 /** Fetch raw records from the versioned endpoint and pivot by year. */
 const getNameData = async (name: string): Promise<NameData[]> => {
-  const response = await fetch(`http://localhost:8000/api/names/${encodeURIComponent(name)}`);
+  const base = import.meta.env.VITE_API_URL ?? '';
+  const response = await fetch(`${base}/api/names/${encodeURIComponent(name)}`);
   if (!response.ok) throw new Error(`API error: ${response.status}`);
 
   const records: NameRecord[] = await response.json();
