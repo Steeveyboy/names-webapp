@@ -69,7 +69,7 @@ class SQLiteBackend(DatabaseBackend):
 
     def get_name_records(self, name: str) -> list[NameRecord]:
         rows = self._fetchall(
-            "SELECT name, gender, count, year FROM ssa_names WHERE LOWER(name) = LOWER(?)",
+            "SELECT name, gender, count, year FROM ssa_names WHERE name = ?",
             (name,),
         )
         return [NameRecord(name=r["name"], gender=r["gender"], count=r["count"], year=r["year"]) for r in rows]
@@ -80,7 +80,7 @@ class SQLiteBackend(DatabaseBackend):
                 """
                 SELECT year, SUM(count) AS count
                 FROM ssa_names
-                WHERE LOWER(name) = LOWER(?) AND gender = ?
+                WHERE name = ? AND gender = ?
                 GROUP BY year ORDER BY year
                 """,
                 (name, gender),
@@ -90,7 +90,7 @@ class SQLiteBackend(DatabaseBackend):
                 """
                 SELECT year, SUM(count) AS count
                 FROM ssa_names
-                WHERE LOWER(name) = LOWER(?)
+                WHERE name = ?
                 GROUP BY year ORDER BY year
                 """,
                 (name,),
@@ -106,7 +106,7 @@ class SQLiteBackend(DatabaseBackend):
                 MIN(year)                     AS first_year,
                 MAX(year)                     AS last_year
             FROM ssa_names
-            WHERE LOWER(name) = LOWER(?)
+            WHERE name = ?
             """,
             (name,),
         )
@@ -117,7 +117,7 @@ class SQLiteBackend(DatabaseBackend):
         peak = self._fetchone(
             """
             SELECT year FROM ssa_names
-            WHERE LOWER(name) = LOWER(?)
+            WHERE name = ?
             ORDER BY count DESC LIMIT 1
             """,
             (name,),
@@ -140,7 +140,7 @@ class SQLiteBackend(DatabaseBackend):
             """
             SELECT gender, SUM(count) AS total_count
             FROM ssa_names
-            WHERE LOWER(name) = LOWER(?)
+            WHERE name = ?
             GROUP BY gender
             """,
             (name,),
@@ -192,7 +192,7 @@ class SQLiteBackend(DatabaseBackend):
                 FROM ssa_names
                 WHERE year = ? AND gender = ?
             ) ranked
-            WHERE LOWER(name) = LOWER(?)
+            WHERE name = ?
             """,
             (year, gender, name),
         )
@@ -208,7 +208,7 @@ class SQLiteBackend(DatabaseBackend):
                 """
                 SELECT (year / 10) * 10 AS decade, SUM(count) AS count
                 FROM ssa_names
-                WHERE LOWER(name) = LOWER(?) AND gender = ?
+                WHERE name = ? AND gender = ?
                 GROUP BY decade ORDER BY decade
                 """,
                 (name, gender),
@@ -218,7 +218,7 @@ class SQLiteBackend(DatabaseBackend):
                 """
                 SELECT (year / 10) * 10 AS decade, SUM(count) AS count
                 FROM ssa_names
-                WHERE LOWER(name) = LOWER(?)
+                WHERE name = ?
                 GROUP BY decade ORDER BY decade
                 """,
                 (name,),
@@ -239,7 +239,7 @@ class SQLiteBackend(DatabaseBackend):
                 """
                 SELECT state, name, gender, count, year
                 FROM ssa_names_by_state
-                WHERE LOWER(name) = LOWER(?) AND state = ?
+                WHERE name = ? AND state = ?
                 """,
                 (name, state),
             )
@@ -248,7 +248,7 @@ class SQLiteBackend(DatabaseBackend):
                 """
                 SELECT state, name, gender, count, year
                 FROM ssa_names_by_state
-                WHERE LOWER(name) = LOWER(?)
+                WHERE name = ?
                 """,
                 (name,),
             )
@@ -262,7 +262,7 @@ class SQLiteBackend(DatabaseBackend):
             """
             SELECT state, SUM(count) AS count
             FROM ssa_names_by_state
-            WHERE LOWER(name) = LOWER(?)
+            WHERE name = ?
             GROUP BY state
             ORDER BY count DESC
             """,
@@ -279,7 +279,7 @@ class SQLiteBackend(DatabaseBackend):
             """
             SELECT name, SUM(count) AS total_count
             FROM ssa_names
-            WHERE LOWER(name) LIKE LOWER(? || '%')
+            WHERE name LIKE ? || '%'
             GROUP BY name
             ORDER BY total_count DESC
             LIMIT ?

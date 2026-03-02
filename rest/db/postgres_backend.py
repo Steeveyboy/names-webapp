@@ -119,7 +119,7 @@ class PostgresBackend(DatabaseBackend):
 
     def get_name_records(self, name: str) -> list[NameRecord]:
         rows = self._fetchall(
-            "SELECT name, gender, count, year FROM ssa_names WHERE LOWER(name) = LOWER(%s)",
+            "SELECT name, gender, count, year FROM ssa_names WHERE name = %s",
             (name,),
         )
         return [NameRecord(**r) for r in rows]
@@ -130,7 +130,7 @@ class PostgresBackend(DatabaseBackend):
                 """
                 SELECT year, SUM(count) AS count
                 FROM ssa_names
-                WHERE LOWER(name) = LOWER(%s) AND gender = %s
+                WHERE name = %s AND gender = %s
                 GROUP BY year ORDER BY year
                 """,
                 (name, gender),
@@ -140,7 +140,7 @@ class PostgresBackend(DatabaseBackend):
                 """
                 SELECT year, SUM(count) AS count
                 FROM ssa_names
-                WHERE LOWER(name) = LOWER(%s)
+                WHERE name = %s
                 GROUP BY year ORDER BY year
                 """,
                 (name,),
@@ -156,7 +156,7 @@ class PostgresBackend(DatabaseBackend):
                 MIN(year)   AS first_year,
                 MAX(year)   AS last_year
             FROM ssa_names
-            WHERE LOWER(name) = LOWER(%s)
+            WHERE name = %s
             """,
             (name,),
         )
@@ -166,7 +166,7 @@ class PostgresBackend(DatabaseBackend):
         peak = self._fetchone(
             """
             SELECT year FROM ssa_names
-            WHERE LOWER(name) = LOWER(%s)
+            WHERE name = %s
             ORDER BY count DESC LIMIT 1
             """,
             (name,),
@@ -191,7 +191,7 @@ class PostgresBackend(DatabaseBackend):
             """
             SELECT gender, SUM(count) AS total_count
             FROM ssa_names
-            WHERE LOWER(name) = LOWER(%s)
+            WHERE name = %s
             GROUP BY gender
             """,
             (name,),
@@ -243,7 +243,7 @@ class PostgresBackend(DatabaseBackend):
                 FROM ssa_names
                 WHERE year = %s AND gender = %s
             ) ranked
-            WHERE LOWER(name) = LOWER(%s)
+            WHERE name = %s
             """,
             (year, gender, name),
         )
@@ -259,7 +259,7 @@ class PostgresBackend(DatabaseBackend):
                 """
                 SELECT (year / 10) * 10 AS decade, SUM(count) AS count
                 FROM ssa_names
-                WHERE LOWER(name) = LOWER(%s) AND gender = %s
+                WHERE name = %s AND gender = %s
                 GROUP BY decade ORDER BY decade
                 """,
                 (name, gender),
@@ -269,7 +269,7 @@ class PostgresBackend(DatabaseBackend):
                 """
                 SELECT (year / 10) * 10 AS decade, SUM(count) AS count
                 FROM ssa_names
-                WHERE LOWER(name) = LOWER(%s)
+                WHERE name = %s
                 GROUP BY decade ORDER BY decade
                 """,
                 (name,),
@@ -290,7 +290,7 @@ class PostgresBackend(DatabaseBackend):
                 """
                 SELECT state, name, gender, count, year
                 FROM ssa_names_by_state
-                WHERE LOWER(name) = LOWER(%s) AND state = %s
+                WHERE name = %s AND state = %s
                 """,
                 (name, state),
             )
@@ -299,7 +299,7 @@ class PostgresBackend(DatabaseBackend):
                 """
                 SELECT state, name, gender, count, year
                 FROM ssa_names_by_state
-                WHERE LOWER(name) = LOWER(%s)
+                WHERE name = %s
                 """,
                 (name,),
             )
@@ -310,7 +310,7 @@ class PostgresBackend(DatabaseBackend):
             """
             SELECT state, SUM(count) AS count
             FROM ssa_names_by_state
-            WHERE LOWER(name) = LOWER(%s)
+            WHERE name = %s
             GROUP BY state
             ORDER BY count DESC
             """,
@@ -327,12 +327,12 @@ class PostgresBackend(DatabaseBackend):
             """
             SELECT name, SUM(count) AS total_count
             FROM ssa_names
-            WHERE LOWER(name) LIKE LOWER(%s || '%%')
+            WHERE name LIKE %s
             GROUP BY name
             ORDER BY total_count DESC
             LIMIT %s
             """,
-            (prefix, limit),
+            (prefix + "%", limit),
         )
         return [NameSearchResult(**r) for r in rows]
 

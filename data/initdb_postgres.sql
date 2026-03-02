@@ -20,3 +20,11 @@ CREATE TABLE ssa_names_by_state (
     count   INTEGER    NOT NULL,
     year    INTEGER    NOT NULL
 );
+
+-- Performance indexes — enable index scans for name lookups
+-- instead of sequential scans with LOWER().
+CREATE INDEX IF NOT EXISTS idx_ssa_names_name ON ssa_names (name);
+CREATE INDEX IF NOT EXISTS idx_ssa_names_year ON ssa_names (year);
+CREATE INDEX IF NOT EXISTS idx_ssa_names_name_year ON ssa_names (name, year);
+CREATE INDEX IF NOT EXISTS idx_ssa_names_by_state_name ON ssa_names_by_state (name);
+CREATE INDEX IF NOT EXISTS idx_ssa_names_by_state_name_state ON ssa_names_by_state (name, state);
