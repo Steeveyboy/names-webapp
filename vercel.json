@@ -1,0 +1,8 @@
+{
+  "buildCommand": "cd web/name-analyzer-frontend && npm install && npm run build",
+  "outputDirectory": "web/name-analyzer-frontend/dist",
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/index" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
+}

@@ -86,18 +86,21 @@ conn.close()
 
 ```bash
 cd rest
-flask run --debug
-# Or
-python app.py
+uvicorn app:app --reload
+# Or for production (no auto-reload):
+# uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 
-The API will be available at `http://localhost:5000`
+The API will be available at `http://localhost:8000`
+
+Swagger UI: `http://localhost:8000/docs`
+ReDoc:      `http://localhost:8000/redoc`
 
 ### 5. Test API Endpoints
 
 ```bash
 # Test name search
-curl http://localhost:5000/searchName/John
+curl http://localhost:8000/api/names/John
 
 # Expected response: JSON array with name data
 ```
