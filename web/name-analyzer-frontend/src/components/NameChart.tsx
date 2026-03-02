@@ -33,8 +33,12 @@ function CustomTooltip({ active, payload, label }: TooltipProps<number, string>)
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-lg px-4 py-3 text-sm">
       <p className="font-semibold text-gray-800 mb-1">{label}</p>
-      {payload.map(entry => (
-        <p key={entry.name} style={{ color: entry.color }} className="flex gap-2">
+      {payload.map((entry, i) => (
+        <p
+          key={`${(entry as any).dataKey ?? entry.name ?? i}`}
+          style={{ color: entry.color }}
+          className="flex gap-2"
+        >
           <span className="font-medium">{entry.name}:</span>
           <span>{fmt(entry.value)}</span>
         </p>
