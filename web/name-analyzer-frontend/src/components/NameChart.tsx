@@ -12,8 +12,12 @@ import {
   TooltipProps,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
-import type { NameData } from '../App';
 
+interface NameData {
+  year: number;
+  male: number | null;
+  female: number | null;
+}
 interface NameChartProps {
   name: string;
   data: NameData[];
