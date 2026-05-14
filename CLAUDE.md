@@ -51,7 +51,6 @@ app.py  →  db/factory.py  →  db/base.py (DatabaseBackend ABC)
 - Postgres backend resolves its DSN from `DATABASE_URL` (set in `.env`).
 - `models.py` — Pydantic v2 contracts shared between DB layer and API.
 - `config.py` — reads env (`DB_BACKEND`, `SQLITE_DB_PATH`), loads `.env` from project root.
-- `dbWrapper.py` is **legacy** — do not use for new code.
 
 ### Name normalization (important)
 
