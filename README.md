@@ -1,80 +1,84 @@
-# Names Analytics Webapp
+# Nomi — Names Analytics Webapp
 
-A full-stack web application for visualizing and analyzing newborn names data from the Social Security Administration (SSA). Explore naming trends, popularity changes, and demographic patterns from 1898 to 2021.
+A full-stack web application for visualizing and analyzing newborn names data from the Social Security Administration (SSA). Explore naming trends, popularity changes, and demographic patterns from 1880 to 2021.
 
 ## 🏗️ Project Structure
 
 ```
 names-webapp/
-├── rest/                   # Python FastAPI backend
-│   ├── app.py             # FastAPI application
-│   └── db/                # Pluggable DB backends (SQLite / Postgres)
-├── web/                   # Frontend (HTML, CSS, JavaScript)
-├── data/                  # SSA data files
-├── names_database.db      # SQLite database
-├── query_maker.ipynb      # Data exploration notebook
-└── requirements.txt       # Python dependencies
+├── rest/                          # Python FastAPI backend
+│   ├── app.py                    # FastAPI application (routes, /docs, /redoc)
+│   ├── config.py                 # Env config (DB_BACKEND, SQLITE_DB_PATH)
+│   ├── models.py                 # Pydantic v2 contracts
+│   ├── db/                       # Pluggable DB backends (SQLite / Postgres)
+│   └── names_database.db         # SQLite database (created via ingestion)
+├── web/name-analyzer-frontend/   # React 19 + TypeScript + Vite SPA
+├── api/index.py                  # Vercel serverless entry (re-exports FastAPI app)
+├── data/                         # Ingestion scripts + SQL DDL
+│   ├── data_ingestion.py
+│   ├── initdb.sql / initdb_postgres.sql
+│   └── fetch_data.bash
+├── vercel.json                   # Deployment config
+├── requirements.txt              # Backend production dependencies
+├── requirements-dev.txt          # + Jupyter, seaborn
+└── query_maker.ipynb             # Data exploration notebook
 ```
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Python 3.8+ (Python 3.12 recommended)
-- Node.js 16+ (for frontend development)
+- Python 3.12
+- Node.js 18+
 - Git
 
-### 1. Clone and Setup
+### Clone
 
 ```bash
 git clone <your-repo-url>
 cd names-webapp
 ```
 
-## 🐍 Backend Setup (Flask API)
+## 🐍 Backend Setup (FastAPI)
 
 ### 1. Create Virtual Environment
 
 ```bash
-# Create virtual environment
 python3.12 -m venv .venv
 
-# Activate virtual environment
-# On Linux/macOS:
+# Activate:
+# Linux/macOS:
 source .venv/bin/activate
-# On Windows:
+# Windows:
 # .venv\Scripts\activate
 ```
 
 ### 2. Install Dependencies
 
 ```bash
-# Install production dependencies
 pip install -r requirements.txt
 
 # For development (includes Jupyter, seaborn)
 pip install -r requirements-dev.txt
 ```
 
-### 3.0 Populate Database
+### 3. Populate Database
+
 ```bash
-cd data/
+cd data
+python data_ingestion.py -d
 
-# Download and ingest data into sqlite3 db
-python data_ingestion -d
-
-# Move names_database from project root to rest/
+# Move the resulting SQLite DB into rest/
 cd ..
 mv names_database.db rest/
 ```
 
+### 4. Verify Database
 
-### 3.1 Verify database
 ```bash
-# Check if database exists and has data
 python3 -c "
 import sqlite3
-conn = sqlite3.connect('names_database.db')
+conn = sqlite3.connect('rest/names_database.db')
 cursor = conn.cursor()
 cursor.execute('SELECT COUNT(*) FROM ssa_names')
 print(f'Database contains {cursor.fetchone()[0]} records')
@@ -82,88 +86,69 @@ conn.close()
 "
 ```
 
-### 4. Run Backend Server
+### 5. Run Backend Server
 
 ```bash
 cd rest
 uvicorn app:app --reload
-# Or for production (no auto-reload):
+# Production (no auto-reload):
 # uvicorn app:app --host 0.0.0.0 --port 8000
 ```
 
-The API will be available at `http://localhost:8000`
+The API is available at `http://localhost:8000`.
 
-Swagger UI: `http://localhost:8000/docs`
-ReDoc:      `http://localhost:8000/redoc`
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
 
-### 5. Test API Endpoints
+### Using Postgres/Neon instead of SQLite
+
+Set env vars (e.g. in a `.env` file at the project root, loaded automatically by `rest/config.py`):
 
 ```bash
-# Test name search
-curl http://localhost:8000/api/names/John
-
-# Expected response: JSON array with name data
+DB_BACKEND=postgres
+DATABASE_URL=postgresql://<user>:<password>@<host>/<db>?sslmode=require
 ```
+
+`DB_BACKEND` accepts `sqlite` (default), or `postgres`/`postgresql`/`neon`.
+
+### Test API Endpoints
+
+```bash
+curl http://localhost:8000/api/names/John
+curl http://localhost:8000/api/names/John/trends
+curl "http://localhost:8000/api/rankings/2020?gender=F&limit=5"
+```
+
+See `/docs` for the full endpoint catalog: name lookup/trends/stats/gender/decades, year rankings, state-level distribution, prefix search, and diversity metrics.
 
 ## 🌐 Frontend Setup
 
-### 1. Basic HTML/CSS/JavaScript Setup
-
-The frontend will be served from the `web/` directory. For development:
+The frontend lives in `web/name-analyzer-frontend/` — React 19 + TypeScript + Vite, Tailwind CSS, Radix UI primitives, and Recharts for charts.
 
 ```bash
-cd web
-
-# Install a simple HTTP server for development
-npm install -g live-server
-# Or use Python's built-in server
-python -m http.server 8080
-
-# Access at http://localhost:8080
+cd web/name-analyzer-frontend
+npm install
+npm run dev      # Vite dev server at http://localhost:5173
 ```
 
-### 2. Frontend Structure (To Be Created)
+> The dev server has **no proxy** — the FastAPI backend must also be running on `:8000` (App.tsx currently hardcodes `http://localhost:8000`).
 
-```
-web/
-├── index.html              # Main application page
-├── css/
-│   ├── styles.css         # Custom styles
-│   └── bootstrap.min.css  # CSS framework (optional)
-├── js/
-│   ├── app.js            # Main application logic
-│   ├── charts.js         # Data visualization
-│   └── api.js            # API communication
-└── assets/
-    └── images/           # Static images
-```
+Other scripts:
 
-### 3. Recommended Frontend Libraries
-
-Add these to your HTML for quick development:
-
-```html
-<!-- CSS Framework -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
-<!-- Charts and Visualization -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<!-- OR -->
-<script src="https://d3js.org/d3.v7.min.js"></script>
-
-<!-- HTTP Requests -->
-<script src="https://axios-http.com/axios.min.js"></script>
+```bash
+npm run build    # Production build → dist/
+npm run lint     # ESLint
+npm run preview  # Preview the production build
 ```
 
 ## 🛠️ Development Workflow
 
 ### Backend Development
 
-1. **Run Flask in debug mode:**
+1. **Run with auto-reload:**
    ```bash
    cd rest
-   export FLASK_DEBUG=1
-   flask run
+   uvicorn app:app --reload
    ```
 
 2. **Data exploration:**
@@ -171,77 +156,67 @@ Add these to your HTML for quick development:
    jupyter lab query_maker.ipynb
    ```
 
-3. **Database queries:** all DB access goes through the `DatabaseBackend` abstraction in `rest/db/`. See `rest/db/base.py` for the contract and `rest/db/factory.py` for backend selection.
+3. **Database queries:** all DB access goes through the `DatabaseBackend` abstraction in `rest/db/`. Declare new queries on `rest/db/base.py` first, then implement them in both `sqlite_backend.py` and `postgres_backend.py`. See `rest/db/factory.py` for backend selection.
 
 ### Frontend Development
 
-1. **Live reload development:**
-   ```bash
-   cd web
-   live-server --port=8080
-   ```
-
-2. **API integration:**
-   ```javascript
-   // Example API call
-   fetch('http://localhost:5000/searchName/John')
-     .then(response => response.json())
-     .then(data => console.log(data));
-   ```
+Run `npm run dev` from `web/name-analyzer-frontend/` for hot-reload during development. Year-range/state/gender filtering currently happens client-side in `App.tsx`; new features should prefer the versioned `/api/...` endpoints over the legacy `/searchName/<name>` route.
 
 ## 📊 Available Data & Analytics
-
-The database contains SSA names data with the following schema:
 
 ```sql
 CREATE TABLE ssa_names(
     name TEXT,      -- First name
     gender CHAR,    -- 'M' or 'F'
     count INTEGER,  -- Number of babies with this name
-    year INTEGER    -- Year (1898-2021)
+    year INTEGER    -- Year (1880-2021)
+);
+
+CREATE TABLE ssa_names_by_state(
+    state TEXT,     -- Two-letter state code
+    name TEXT,
+    gender CHAR,
+    count INTEGER,
+    year INTEGER
 );
 ```
 
-### Possible Analytics Features
+### Analytics Features
 
 - **Trend Analysis**: Name popularity over time
 - **Gender Distribution**: Male vs Female usage
 - **Decade Comparisons**: Popular names by decade
-- **Name Rankings**: Top names by year
-- **Statistical Insights**: Rare vs common names
-- **Search & Discovery**: Name variations and suggestions
+- **Name Rankings**: Top names by year, and a name's rank in a given year
+- **State-Level Data**: Distribution of a name across states
+- **Search & Discovery**: Prefix search/autocomplete
+- **Diversity Metrics**: Count of distinct names, optionally by year
 
 ## 🚀 Deployment
 
-### Backend Deployment Options
+Deployed via **Vercel** (`vercel.json`):
 
-1. **Heroku**
-2. **Railway**
-3. **PythonAnywhere**
-4. **DigitalOcean App Platform**
+- Builds the frontend: `cd web/name-analyzer-frontend && npm install && npm run build`
+- Serves the build output from `web/name-analyzer-frontend/dist`
+- Routes `/api/*` to `api/index.py`, which adds `rest/` to `sys.path` and re-exports the FastAPI `app`
+- Everything else falls back to `index.html` (SPA routing)
 
-### Frontend Deployment Options
-
-1. **Netlify**
-2. **Vercel**
-3. **GitHub Pages**
-4. **Firebase Hosting**
+Set `DB_BACKEND` and `DATABASE_URL` as Vercel project environment variables to use Postgres/Neon in production.
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
-1. **Database not found**: Ensure `names_database.db` exists in the root directory
-2. **Import errors**: Activate virtual environment and install requirements
-3. **CORS errors**: Configure Flask-CORS for cross-origin requests
-4. **Port conflicts**: Change Flask port with `flask run --port=5001`
+1. **Database not found**: Ensure `names_database.db` exists in `rest/` (or that `DB_BACKEND=postgres` and `DATABASE_URL` are set correctly).
+2. **Import errors**: Activate the virtual environment and reinstall requirements.
+3. **CORS errors**: `app.py` enables CORS for all origins by default via `CORSMiddleware`; check the frontend's request URL if you still see errors.
+4. **Port conflicts**: Run uvicorn on a different port with `--port <port>`, and update the hardcoded API URL in `App.tsx` to match.
+5. **Frontend can't reach backend**: Confirm both servers are running — there is no dev proxy, so `:8000` (API) and `:5173` (Vite) must both be up.
 
 ### Development Tips
 
-- Use `flask run --debug` for auto-reload during development
 - Check browser developer tools for frontend errors
-- Test API endpoints with curl or Postman
-- Use SQLite browser to inspect database contents
+- Test API endpoints with `/docs` (Swagger UI), curl, or Postman
+- Use a SQLite browser to inspect `rest/names_database.db`
 
 ## 📝 Contributing
 
