@@ -1,0 +1,9 @@
+{
+  "name": "names-webapp",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Root manifest so Vercel detects the Vite SPA build alongside the Python API in api/.",
+  "scripts": {
+    "build": "npm install --prefix web/name-analyzer-frontend && npm run build --prefix web/name-analyzer-frontend"
+  }
+}
