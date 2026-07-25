@@ -6,9 +6,9 @@ A full-stack web application for visualizing and analyzing newborn names data fr
 
 ```
 names-webapp/
-├── rest/                   # Python Flask backend
-│   ├── app.py             # Flask application
-│   └── dbWrapper.py       # Database connection wrapper
+├── rest/                   # Python FastAPI backend
+│   ├── app.py             # FastAPI application
+│   └── db/                # Pluggable DB backends (SQLite / Postgres)
 ├── web/                   # Frontend (HTML, CSS, JavaScript)
 ├── data/                  # SSA data files
 ├── names_database.db      # SQLite database
@@ -171,12 +171,7 @@ Add these to your HTML for quick development:
    jupyter lab query_maker.ipynb
    ```
 
-3. **Database queries:**
-   ```python
-   from dbWrapper import dbManager
-   dbm = dbManager()
-   results = dbm.get_name("John")
-   ```
+3. **Database queries:** all DB access goes through the `DatabaseBackend` abstraction in `rest/db/`. See `rest/db/base.py` for the contract and `rest/db/factory.py` for backend selection.
 
 ### Frontend Development
 

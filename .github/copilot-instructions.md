@@ -50,7 +50,6 @@ app.py  →  db/factory.py  →  db/base.py (ABC)
 - `models.py` contains Pydantic v2 models that form the contract between the DB layer and the API. All routes serialize via `.model_dump()`.
 - `config.py` reads env vars (`DB_BACKEND`, `SQLITE_DB_PATH`).
 - **Postgres backend** uses `DATABASE_URL` env var for the connection string (DSN). Set this in `.env` for local Postgres/Neon development.
-- `dbWrapper.py` is a **legacy file** — do not use it for new code.
 
 ### Database schema
 
