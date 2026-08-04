@@ -19,9 +19,12 @@ export interface NameData {
 }
 
 /** Fetch raw records from the versioned endpoint and pivot by year. */
-const getNameData = async (name: string): Promise<NameData[]> => {
+const getNameData = async (name: string, state?: string): Promise<NameData[]> => {
   const base = import.meta.env.VITE_API_URL ?? '';
-  const response = await fetch(`${base}/api/names/${encodeURIComponent(name)}`);
+  const url = state && state !== 'All States'
+    ? `${base}/api/names/${encodeURIComponent(name)}/states?state=${encodeURIComponent(state)}`
+    : `${base}/api/names/${encodeURIComponent(name)}`;
+  const response = await fetch(url);
   if (!response.ok) throw new Error(`API error: ${response.status}`);
 
   const records: NameRecord[] = await response.json();
@@ -64,7 +67,7 @@ export default function App() {
     setIsLoading(true);
 
     try {
-      let data = await getNameData(name);
+      let data = await getNameData(name, filters.state);
 
       // Filter by year range
       if (filters.yearFrom) {
