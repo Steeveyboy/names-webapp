@@ -26,7 +26,7 @@ npm run lint     # ESLint
 npm run preview  # Preview prod build
 ```
 
-The frontend dev server has **no proxy** — both servers must run during development (FastAPI on `:8000`, Vite on `:5173`). The frontend currently hardcodes `http://localhost:8000` in `App.tsx`.
+The frontend dev server has **no proxy** — both servers must run during development (FastAPI on `:8000`, Vite on `:5173`). The API base URL comes from `import.meta.env.VITE_API_URL` (falling back to `''`, i.e. same-origin, which is what production uses). `web/name-analyzer-frontend/.env.development` is checked in and sets it to `http://localhost:8000`.
 
 ### First-time data ingestion
 ```bash
@@ -69,8 +69,17 @@ ssa_names_by_state(state TEXT, name TEXT, gender CHAR, count INTEGER, year INTEG
 
 ### Frontend stack
 
-React 19 + TS + Vite, **Recharts** for charts, **Radix UI** primitives, **Tailwind CSS**, shadcn/ui-style components under `src/components/ui/`. Year-range / state / gender filtering is currently done **client-side** in `App.tsx` against results from the legacy `/searchName/<name>` endpoint. New features should prefer the versioned `/api/...` endpoints (see `app.py` for the catalog).
+React 19 + TS + Vite, **Recharts** for charts, **Radix UI** primitives, **Tailwind CSS**, shadcn/ui-style components under `src/components/ui/`.
+
+`App.tsx` fetches from the versioned endpoints — `/api/names/<name>`, or `/api/names/<name>/states?state=<state>` when a state filter is active — then pivots the flat `NameRecord[]` into per-year `{ year, male, female }` rows for the chart. Filtering is split:
+
+- **State** — pushed to the backend (endpoint choice above).
+- **Year range and gender** — still applied **client-side** in `handleSearch`. Gender filtering nulls out the unwanted series rather than dropping points, to keep the chart's axis scale stable.
+
+The legacy `/searchName/<name>` endpoint is marked `deprecated=True` in `app.py` and is no longer used by the frontend. New features should use the versioned `/api/...` endpoints (see `app.py` for the full catalog).
 
 ### Deployment
 
-`vercel.json` builds the frontend (`web/name-analyzer-frontend`) and routes `/api/*` to `api/index.py`, which adds `rest/` to `sys.path` and re-exports `app`. Everything else falls back to `index.html` (SPA).
+`vercel.json` runs the root `npm run build`, which is a thin wrapper that installs and builds the frontend via `--prefix web/name-analyzer-frontend`; the root `package.json` exists purely so Vercel detects the Vite SPA alongside the Python API. Output is served from `web/name-analyzer-frontend/dist`.
+
+Two rewrites: `/api/*` → `api/index.py` (adds `rest/` to `sys.path` and re-exports `app` for the `@vercel/python` runtime), and everything else → `index.html` (SPA fallback). Because `/api/*` is same-origin in production, `VITE_API_URL` should stay unset there.
